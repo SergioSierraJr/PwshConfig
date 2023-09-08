@@ -8,5 +8,5 @@ a certain function requires notepad to be installed.
 # Features
 * Automatic update of PATH variable
 * np function - Edit and create files with notepad
-* rm functin - Remove files and directories
+* rm functin - Remove files and directories \
 More features are soon to come.
