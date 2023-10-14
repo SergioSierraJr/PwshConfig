@@ -1,3 +1,5 @@
+# skip to last line(s) for init
+
 function PromptPwd {
     $pwd_dirs = $PWD.ToString().Split("/") | Select-Object -Skip 1
     if (("/" + $pwd_dirs[0] + "/" + $pwd_dirs[1]) -ne $HOME.ToString()) {
@@ -18,8 +20,11 @@ function PromptPwd {
 
 function RefreshPath {
     $pathToXml = $HOME+"/.config/powershell/ExtraPaths.xml"
+    if(-not (Test-Path $pathToXml)){
+        return
+    }
+
     $xmlData = [xml](Get-Content $pathToXml)
-    Write-Host $currentPaths
     foreach($selectedPath in $xmlData.ExtraPaths) {
         if($selectedPath.Path -notin $Env:PATH.Split(":")){
             $Env:PATH += ":"+$selectedPath.Path
@@ -30,28 +35,18 @@ function RefreshPath {
 function AddPath {
     $pathToXml = $HOME+"/.config/powershell/ExtraPaths.xml"
 
-    if((Test-Path $pathToXml -PathType Leaf) -ne "True"){
-        Write-Host "Creating ExtraPaths file..."
-        New-Item $pathToXml
+    if(-not (Test-Path $pathToXml)){
+        Write-Host "AddPath: Creating ExtraPaths.xml file"
+        New-Item $pathToXml | Out-Null
 
-        $xmlData = [xml](Get-Content $pathToXml)
-        $xmlWriter = New-Object System.Xml.XmlTextWriter($pathToXml, $Null)
-
-        $xmlWriter.Formatting = "Indented"
-        $xmlWriter.Indentation = 1
-        $xmlWriter.IndentChar = "`t"
-        $xmlWriter.WriteStartDocument()
-
-        $xmlWriter.WriteStartElement("ExtraPaths")
-
-        $xmlWriter.WriteEndElement()
-
-        $xmlWriter.WriteEndDocument()
-        $xmlWriter.Flush()
-        $xmlWriter.Close()
-        
+        $xmlCreation = New-Object System.Xml.XmlDocument
+        $xmlCreation.AppendChild($xmlCreation.CreateXmlDeclaration("1.0", "UTF-8", $Null)) | Out-Null
+        $xmlCreation.AppendChild($xmlCreation.CreateElement("ExtraPaths")) | Out-Null
+        $xmlCreation.Save($pathToXml)  
     }
+
     $xmlData = [xml](Get-Content $pathToXml)
+
     [string[]]$paths 
     
     foreach ($item in $args) {
@@ -60,26 +55,29 @@ function AddPath {
         }
     }
  
-    
     foreach($currentPath in $paths) {
         if($currentPath -in $xmlData.ExtraPaths.Path){
-            Write-Host "AddPath: Error: $currentPath is already in path"
+            Write-Host "AddPath: Error $currentPath is already in path"
             continue
         }
         if($currentPath -eq ""){
             continue
         }
-        if((Test-Path $currentPath) -ne "True") {
-            Write-Host "AddPath: Error, $currentPath is not a valid path"
+        if(-not (Test-Path $currentPath)) {
+            Write-Host "AddPath: Error $currentPath is not a valid path"
             continue
         }
-        $parentElement = $xmlData.SelectSingleNode("//ExtraPaths")
+        $parentElement = $xmlData.SelectSingleNode("ExtraPaths")
         $textElement = $xmlData.CreateElement("Path")
         $textElement.InnerText = $currentPath
-        $parentElement.AppendChild($textElement)
+        $parentElement.AppendChild($textElement) | Out-Null
     }
     $xmlData.Save($pathToXml)
     RefreshPath
+}
+
+function ls {
+    exa -l --no-permissions $args
 }
 
 function Prompt {
@@ -93,3 +91,5 @@ function Prompt {
     Write-Host "]->" -NoNewline
     return " "
 }
+
+RefreshPath
