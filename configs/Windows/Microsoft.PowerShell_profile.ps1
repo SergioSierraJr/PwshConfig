@@ -13,25 +13,11 @@ Set-PSReadlineOption -Color @{
     "Comment" = [ConsoleColor]::DarkCyan
 }
 
-function np {
-    $FileNameArray = $args -split " " 
-    foreach( $FileName in $FileNameArray) {
-        notepad.exe $FileName
-    }
-}
-
 function rm {
     $FileNameArray = $args -split " " 
     foreach( $FileName in $FileNameArray) {
         Remove-Item $FileName
     }
-}
-
-function Update-Path {
-    $newUserPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
-    $newSystemPath = [Environment]::GetEnvironmentVariable('PATH', 'Machine')
-    $newPath = $newUserPath + $newSystemPath
-    $Env:Path = $newPath
 }
 
 function Prompt {
